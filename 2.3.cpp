@@ -16,6 +16,7 @@ typedef struct DNode {
 	int freq;  //3.20
 }DNode, * DLinkList;
 
+//问题：如果出现连续的X序列，那么删除是否正确，会出现漏判
 //3.1
 void DeleteNext(LinkList q, ElemType x) {
 	LinkList d;
@@ -46,7 +47,7 @@ void DeleteX(LinkList &head, ElemType x) {
 	DeleteNext(head, x);
 }
 
-//3.2
+//3.2 跟上面的错误一样
 void DeleteX_h(LinkList head, ElemType x) {
 	LinkList d;
 
@@ -189,14 +190,19 @@ void Sort_Demo() {
 
 //3.7
 bool DeleteXY(LinkList q, ElemType x, ElemType y) {
-	if (q == NULL) return false;   
+	// 带表头结点
+	// if (q == NULL) return false;   
 	if (x > y) return false;
 
 	LinkList d = q;
 
+	LinkList temp;
+	//删除的没问题，就是有些空间没有释放
 	while (d->next != NULL) {
 		if (d->next->data >= x && d->next->data <= y)
+			temp = d->next;
 			d->next = d->next->next;
+			free(temp);
 		d = d->next;
 	}
 
@@ -222,7 +228,8 @@ bool FindPublicNode(LinkList a, LinkList b, LNode* n) {
 		lenB++;
 		d = d->next;
 	}
-	distance = sqrt(lenA - lenB);
+	// distance = sqrt(lenA - lenB);        sqrt是开平方
+	distance = (lenA-lenB)>0?(lenA-lenB):(lenB-lenA);     
 
 	if (lenA > lenB) for (i = a; distance > 0; distance--) i = i->next;
 	if (lenA < lenB) for (j = b; distance > 0; distance--) j = j->next;
@@ -240,21 +247,21 @@ bool FindPublicNode(LinkList a, LinkList b, LNode* n) {
 }
 
 
-//3.9
+//3.9 题目要求是按照递增顺序进行输出，这样写是按照递减进行输出，但是代码没什么问题
 void PrintIncrease(LinkList head) {
 	if (head == NULL) return;
 	if (head->next == NULL) return;
 
-	ElemType max = head->next->data;   //记录最大值
-	LinkList pNode = head;             //记录最大值结点的上一个结点
+	ElemType min = head->next->data;   //记录最小值
+	LinkList pNode = head;             //记录最小值结点的上一个结点
 	LinkList nNode = head;       //记录当前遍历到的结点
 	LinkList d;                        //辅助变量
 
-	while (head->next != NULL) {        //每次找到最大值后输出，并在原链表中删除。重复直到链表空。
+	while (head->next != NULL) {        //每次找到最小值后输出，并在原链表中删除。重复直到链表空。
 		//寻找最小值
 		while (nNode->next != NULL) {
-			if (nNode->next->data >= max) {  
-				max = nNode->next->data;
+			if (nNode->next->data < min) {  
+				min = nNode->next->data;
 				pNode = nNode;
 			}
 			nNode = nNode->next;
@@ -263,14 +270,14 @@ void PrintIncrease(LinkList head) {
 		//输出
 		printf_s("%d ", pNode->next->data);
 
-		//删除原链表最大值结点
+		//删除原链表最小值结点
 		d = pNode->next;
 		pNode->next = pNode->next->next;
 		free(d);
 
 		nNode = head;
 		if (head->next != NULL)
-			max = head->next->data;
+			min = head->next->data;
 	}//while
 }
 
@@ -418,27 +425,45 @@ void Intersection(LinkList a, LinkList b) {
 		}
 		else j = j->next;
 	}
+	//如果A中还没有遍历完，需要将A链表中未遍历的结点删除
+	while(i->next){
+		m = i->next;
+		i->next = i->next->next;
+		free(m);
+	}
 }
 
 
-//3.16
+//3.16 找到第一个相等的并不一定是正确序列中的第一个，如果不对，需要继续往下面判断
 bool IsContinSubs(LinkList a, LinkList b) {
 	if (a == NULL || b == NULL) return false;
 
-	LNode* i = a->next, * j = b->next, * m;
+	LNode* i = a->next, * j = b->next, * m = a->next;
 
-	//找到第一个相同的元素
-	while (i != NULL) {
-		if (i->data = j->data) break;
-		i = i->next;
-	}
-	if (i == NULL) return false;
+	// //找到第一个相同的元素
+	// while (i != NULL) {
+	// 	if (i->data = j->data) break;
+	// 	i = i->next;
+	// }
+	// if (i == NULL) return false;
 
-	while (i != NULL && j != NULL) {
-		i = i->next;
-		j = j->next;
-		if (i->data != j->data) break;
+	// while (i != NULL && j != NULL) {
+	// 	i = i->next;
+	// 	j = j->next;
+	// 	if (i->data != j->data) break;
+	// }
+	while(i&&j){
+		if(i->data==j->data){
+			i = i->next;
+			j = j->next;
+		}else{
+			m = m->next;
+			i = pre;
+			j = b->next;
+		}
 	}
+	if(!j) return true;
+	else return false;
 
 }
 
@@ -460,18 +485,39 @@ bool IsSymmetric(DLinkList q) {
 
 //3.18
 //循环单链表设尾指针不设头指针
-bool Connnect(LinkList h1, LinkList h2) {
-	if (h1 == NULL || h2 == NULL) return false;
+LinkList Connnect(LinkList h1, LinkList h2) {
+	// 如果h1为null,h2不空,h1地址指向h2即可，如果h2空，直接返回h1即可
+	// if (h1 == NULL || h2 == NULL) return false;
+	if(h2 == NULL) return h1;
+	if(h1 == NULL){
+		h1 = h2;
+		return h1;
+	}
 
-	LNode* i = h1->next, * j = h2->next;  //记录头指针
+	// 将链表h2链接到h1后面，需要先找到h1和h2的最后一个结点
+	LNode *p,*q,*temp1,*temp2;
+	p = h1;
+	temp1 = h1->next;
+	q = h2;
+	while(temp1->next!=p){
+		temp2 = temp2->next;
+	}
+	while(temp2->next!=q){
+		temp2 = temp2->next;
+	}
+	temp1->next = q;
+	temp2->next = p;
+	return h1;
 
-	h1->next = j->next;
-	h2->next = i;
-	h1 = h2;
+// 	LNode* i = h1->next, * j = h2->next;  //记录头指针
 
-	free(j);
-	return true;
-}
+// 	h1->next = j->next;
+// 	h2->next = i;
+// 	h1 = h2;
+
+// 	free(j);
+// 	return true;
+// }
 
 
 //3.19
@@ -545,26 +591,42 @@ int PrintInvert(LinkList q, int k) {
 bool DeleteSimilar(LinkList q, int n) {
 	if (q == NULL) return false;
 
-	ElemType* flag = (ElemType*)malloc(sizeof(ElemType) * (n + 1));
+	int* flag = (int*)malloc(sizeof(ElemType) * (n + 1));
 	for (int i = 0; i < n + 1; i++) flag[i] = 0;
 
-	LNode* j = q->next,* k;
-	while (j != NULL) {
-		if (sqrt(j->data) <= n) flag[(int)sqrt(j->data)] = 1;
-		else return false;
-		j = j->next;
-	}
+	LNode* j,* k,*pre;
+	j = q->next;
+	pre = q;
+	// 先while循环将数组存在的都为1,后面就全部删掉了，应该在一边判断一边就行删除
+	// while (j != NULL) {
+	// 	// abs才是绝对值函数
+	// 	// if (sqrt(j->data) <= n) flag[(int)sqrt(j->data)] = 1;
+	// 	if (abs(j->data) <= n) flag[(int)abs(j->data)] = 1;
+	// 	else return false;
+	// 	j = j->next;
+	// }
 
-	j = q;
-	while (j->next != NULL) {
-		if (flag[(int)sqrt(j->next->data)] == 1) {
-			k = j->next;
-			j->next = j->next->next;
+	// j = q;
+	// while (j->next != NULL) {
+	// 	if (flag[(int)sqrt(j->next->data)] == 1) {
+	// 		k = j->next;
+	// 		j->next = j->next->next;
+	// 		free(k);
+	// 	}
+	// 	j = j->next;
+	// }
+	while(j){
+		if(flag[j->data]){
+			k = j;
+			j = j->next;
+			pre->next = j->next;
 			free(k);
+		}else{
+			flag[j->data] = 1;
+			pre = j;
+			j = j->next;
 		}
-		j = j->next;
 	}
-
 	return true;
 }
 //时间复杂度O(m),空间复杂度O(n)
