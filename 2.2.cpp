@@ -9,6 +9,10 @@ typedef struct {
 	int MaxSize, length;   //数组的最大数量和当前长度
 }SeqList;
 
+
+//顺序表使用了动态存储分配，需要的时候需要进行一下data的分配
+//L.data = (ElemType*)malloc(sizeof(ElemType)*InitSize);
+
 //2.1
 //从顺序表中删除具有最小值的元素(假设唯一)并由函数返回被删元素的值。
 //空出的位置由最后一个元素填补，若顺序表为空则显示出错信息并退出运行。
@@ -35,8 +39,11 @@ bool RetMin(SeqList* q, ElemType* e) {
 //2.2
 //设计一个高效算法，将顺序表L的所有元素逆置，要求算法的空间复杂度为O(1)
 bool Reverse(SeqList* q) {
-	if (!q || !q->length) return false;
-	int i = 0, temp;
+	// 为空表的时候不需要逆置，但不是逆置错误了，下面这行不用写
+	// if (!q || !q->length) return false;
+	int i = 0;
+	// 注意类型
+	ElemType temp;
 	for (int j = q->length - 1; i < j; i++, j--) {
 		temp = q->data[i];
 		q->data[i] = q->data[j];
@@ -49,14 +56,21 @@ bool Reverse(SeqList* q) {
 //3．对长度为n的顺序表L，编写一个时间复杂度为O(n)、空间复杂度为O(1)的算法，
 //该算法删除线性表中所有值为x的数据元素。
 bool DeleteX(SeqList* q, ElemType x) {
-	if (!q || !q->length) return false;
+	// 跟上面的原因一样，不用写
+	// if (!q || !q->length) return false;
 	int num = 0;
 	for (int i = 0; i < q->length; i++)
 		//第num个不等于x的元素排在第num-1个位置
 		if (q->data[i] != x) q->data[num++] = q->data[i];
+	// 更新一下顺序表长度
+	q->length = num;
 	return true;
 }//DeleteX
 
+
+// 并没有将删除后的空闲区域填补，
+// 2.4与2.5的区别在于有序和无序，直接按照2.5写即可，
+// 也可以使用先找到初始需要删除的地方，找到需要删除的位置个数多少，然后从后向前平移即可
 //2.4
 bool DeleteSTs(SeqList* q, ElemType s, ElemType t) {
 	if (!q || !q->length || s >= t) return false;
@@ -75,6 +89,8 @@ bool DeleteST(SeqList* q, ElemType s, ElemType t) {
 	for (int i = 0; i < q->length; i++)
 		if (q->data[i] < s || q->data[i] > t) q->data[num++] = q->data[i];
 
+	// 更新顺序表长度
+	q->length = num;
 	return true;
 }//DeleteSTs
 
@@ -86,16 +102,22 @@ bool DeleSame(SeqList* q) {
 	for (int i = 1; i < q->length; i++)
 		if (q->data[i] != q->data[i - 1]) q->data[num++] = q->data[i];
 
+	// 更新顺序表长度
 	return true;
 }//DeleSame
 
+
+
+
+// 重要问题，initsize不一定够用，result的长度应该要满足p,q长度之和，并且比他们大
 //2.7
 bool Merge(SeqList* p, SeqList* q, SeqList* &result) {
-	if (!q || !q->length) return false;
+	// 不用写
+	// if (!q || !q->length) return false;
 
 	SeqList m;
-	m.data = (ElemType*)malloc(sizeof(ElemType)*InitSize);
-	m.MaxSize = InitSize;
+	m.data = (ElemType*)malloc(sizeof(ElemType)*(p->length+q->length+1));
+	// m.MaxSize = InitSize;
 	m.length = 0;
 	SeqList* x = &m;
 
@@ -114,9 +136,11 @@ bool Merge(SeqList* p, SeqList* q, SeqList* &result) {
 	return true;
 }//Merge
 
+// 2.8这种写法对于空间复杂度要求高，而且原有的数组还存放在内存中，但是是满足题意的，原地逆置需要掌握
 //2.8
-void ReverseMN(ElemType*& q, int m, int n) {
+void ReverseMN(ElemType *q, int m, int n,int arraySize) {
 	ElemType* x = (ElemType*)malloc(sizeof(ElemType) * (m + n));
+	if(m+n>arraySize) exit(0);
 	if (!x) exit(0);
 
 	for (int i = 0; i < n; i++) x[i] = q[i + m];
@@ -224,6 +248,7 @@ void FindMid_Demo() {
 //当n=1时，主元素就是当前元素，当n大于1时：
 //遍历数组前半段，依次假设每一位为主元素，然后比较后面的数是否相同，建立两个数s、d
 //当遇到相同数时，s++，当遇到不同数时，f++。当s等于⌈n/2⌉-1时,此时为主元素，当f等于⌈n/2⌉,跳到下一位数
+//暴力破解方法，相等于记录每个数的次数，时间复杂度有点高
 bool SearchMainElem(SeqList* q, ElemType* MainElem) {
 	if (!q || !q->length) return false;
 
@@ -272,15 +297,18 @@ void SearchMainELem_Demo() {
 //2.13
 //想法：建立一个长度为n+1的标志数组，每一位代表1~n+2是否出现，遍历给定数组，最后检测标志数组中未出现最小的数
 bool FindMinPositive(SeqList* q, int* min) {
-	if (!q || !q->length) return false;
+	// 题中已经给了数组长度大于1，形参可以直接使用一个数组就行
+	// if (!q || !q->length) return false;
 
 	ElemType* L = (ElemType*)malloc(sizeof(ElemType) * (q->length + 1));
 	if (!L) exit(0);
 
+	// 直接用int数组就行，题中已经给了数组，并且你写L[i] = 0也代表这个
+	// 类型是整形
 	for (int i = 0; i < q->length + 1; i++) L[i] = 0;//初始化
 
 	for (int i = 0; i < q->length; i++)
-		if (q->data[i] <= q->length + 2 && q->data[i] > 0) L[q->data[i] - 1] = 1;
+		if (q->data[i] <= q->length + 1 && q->data[i] > 0) L[q->data[i] - 1] = 1;
 
 	for(int i = 0; i < q->length + 1; i++) 
 		if (L[i] == 0) {
@@ -288,6 +316,7 @@ bool FindMinPositive(SeqList* q, int* min) {
 			return true;
 		}
 
+	*min = q->length+1;
 	return false;//如果运行到这一步则出现未知情况，查找失败
 }//FindMinPositive
 //时间复杂度O(n),空间复杂度O(n)
